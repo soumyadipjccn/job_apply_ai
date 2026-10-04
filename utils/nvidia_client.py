@@ -14,7 +14,7 @@ from typing import Dict, List, Tuple, Optional
 logger = logging.getLogger(__name__)
 
 # Default NVIDIA NIM model
-DEFAULT_NVIDIA_MODEL = "nvidia/llama-3.1-nemotron-70b-instruct"
+DEFAULT_NVIDIA_MODEL = os.environ.get("NVIDIA_MODEL", "nvidia/nemotron-3.5-lightning-30b-a3b")
 NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 
 class NVIDIAClient:

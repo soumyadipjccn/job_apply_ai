@@ -389,7 +389,10 @@ class CVModifier:
             # Create a new skills section if one doesn't exist
             logger.info("Creating new skills section in CV")
             skills_para = self.doc.add_paragraph()
-            skills_para.style = 'Heading 2'
+            try:
+                skills_para.style = 'Heading 2'
+            except (KeyError, ValueError, Exception):
+                pass
             skills_para.text = "Skills"
             skills_idx = len(self.doc.paragraphs) - 1
         
@@ -397,7 +400,9 @@ class CVModifier:
         # Find where the next section starts
         next_section_idx = None
         for i in range(skills_idx + 1, len(self.doc.paragraphs)):
-            if self.doc.paragraphs[i].style.name.startswith('Heading'):
+            para_style = getattr(self.doc.paragraphs[i], 'style', None)
+            style_name = getattr(para_style, 'name', '') or ''
+            if style_name.startswith('Heading'):
                 next_section_idx = i
                 break
         
@@ -419,14 +424,24 @@ class CVModifier:
             if skills:  # Only add categories with skills
                 # Add category as subheading
                 category_para = self.doc.add_paragraph()
-                category_para.style = 'Heading 3'
+                try:
+                    category_para.style = 'Heading 3'
+                except (KeyError, ValueError, Exception):
+                    try:
+                        category_para.style = 'Heading 2'
+                    except (KeyError, ValueError, Exception):
+                        pass
                 category_para.text = category
                 
                 # Add skills as bullet points
                 for skill in skills:
                     skill_para = self.doc.add_paragraph()
-                    skill_para.style = 'List Bullet'
-                    skill_para.text = skill
+                    try:
+                        skill_para.style = 'List Bullet'
+                        skill_para.text = skill
+                    except (KeyError, ValueError, Exception):
+                        # Fallback if 'List Bullet' style is missing in template docx
+                        skill_para.text = f"• {skill}"
         
         logger.info("Successfully updated skills section in CV")
         return True
