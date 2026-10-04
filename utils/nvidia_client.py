@@ -104,12 +104,25 @@ Job Description:
                 max_tokens=1500
             )
 
-            raw_text = response.choices[0].message.content.strip()
+            if not response or not getattr(response, "choices", None):
+                logger.warning("NVIDIA API returned empty response structure. Falling back to local NLP.")
+                return None
+
+            content = response.choices[0].message.content if response.choices and response.choices[0].message else None
+            if not content or not content.strip():
+                logger.warning("NVIDIA API returned empty content. Falling back to local NLP.")
+                return None
+
+            raw_text = content.strip()
             
-            # Remove Markdown code blocks if present
-            if raw_text.startswith("```"):
-                raw_text = re.sub(r"^```(?:json)?\n?", "", raw_text)
-                raw_text = re.sub(r"\n?```$", "", raw_text)
+            # Robust JSON extraction: search for JSON object delimiters
+            json_match = re.search(r'(\{[\s\S]*\})', raw_text)
+            if json_match:
+                raw_text = json_match.group(1).strip()
+            else:
+                if raw_text.startswith("```"):
+                    raw_text = re.sub(r"^```(?:json)?\n?", "", raw_text, flags=re.IGNORECASE)
+                    raw_text = re.sub(r"\n?```$", "", raw_text)
 
             data = json.loads(raw_text)
             logger.info(f"NVIDIA Model ({self.model}) successfully extracted skills and requirements.")
@@ -145,7 +158,16 @@ Return only the text of the professional summary.
                 max_tokens=300
             )
 
-            return response.choices[0].message.content.strip()
+            if not response or not getattr(response, "choices", None):
+                logger.warning("NVIDIA API returned empty response structure for tailored summary.")
+                return None
+
+            content = response.choices[0].message.content if response.choices and response.choices[0].message else None
+            if not content or not content.strip():
+                logger.warning("NVIDIA API returned empty content for tailored summary.")
+                return None
+
+            return content.strip()
         except Exception as e:
             logger.warning(f"NVIDIA API tailored summary generation failed: {str(e)}")
             return None
